@@ -50,7 +50,7 @@ const options = {
       },
       hover: {
         border: "black",
-        background: "white",
+        background: "black",
       },
     },
     scaling: {
@@ -74,7 +74,7 @@ const options = {
       roundness: 0.4,
     },
     color: {
-      color: "white", 
+      color: "black", 
       hover: "black"
     }
   },
@@ -143,8 +143,13 @@ function addNode() {
   }
 
   const newNodeId = Math.max(...nodes.getIds()) + 1;
-  nodes.add({ id: newNodeId, label: newNodeLabel, comment: newNodeComment });
+  nodes.add({ id: newNodeId, label: newNodeLabel, comment: newNodeComment, connections: [] });
   edges.add({ from: selectedNodeId, to: newNodeId });
+
+  // Update the connections for the parent node
+  const parentNode = nodes.get(selectedNodeId);
+  parentNode.connections.push(newNodeId);
+  nodes.update(parentNode);
 
   // Reset the input field and selected node
   document.getElementById("new-node-label").value = "";
@@ -156,6 +161,7 @@ function addNode() {
   // Save the graph to local storage after adding a node
   saveGraph();
 }
+
 
 function saveGraph() {
   const graphData = {
@@ -174,10 +180,7 @@ function loadGraph() {
   }
 
   const graphData = JSON.parse(storedGraphData);
-  nodes.clear();
-  edges.clear();
-  nodes.add(graphData.nodes);
-  edges.add(graphData.edges);
+  updateGraph(graphData);
 }
 
 function deleteNode() {
@@ -308,19 +311,28 @@ function parseJsonData(jsonData) {
 
 // Validates the graph data
 function validateGraphData(graphData) {
-  if (!graphData.nodes || !graphData.edges) {
-    alert("Invalid JSON format.");
+  if (!graphData.nodes) {
+    alert("Invalid JSON format: missing 'nodes'.");
     return false;
   }
   return true;
 }
+
 
 // Updates the graph with new data
 function updateGraph(graphData) {
   nodes.clear();
   edges.clear();
   nodes.add(graphData.nodes);
-  edges.add(graphData.edges);
+
+  // Add edges based on the connections property in each node
+  graphData.nodes.forEach((node) => {
+    if (node.connections) {
+      node.connections.forEach((connection) => {
+        edges.add({ from: node.id, to: connection });
+      });
+    }
+  });
 }
 
 function exportToPdf() {
