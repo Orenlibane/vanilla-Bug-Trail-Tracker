@@ -1,12 +1,3 @@
-import * as vis from './libs/vis-network.min.js';
-import html2canvas from "./node_modules/html2canvas/dist/html2canvas.min.js";
-import { jsPDF } from "jspdf";
-
-network.on("afterDrawing", function (ctx) {
-  console.log("network drawn");
-});
-
-
 /**
  * Global Variables
  */
@@ -152,8 +143,13 @@ function addNode() {
   }
 
   const newNodeId = Math.max(...nodes.getIds()) + 1;
-  nodes.add({ id: newNodeId, label: newNodeLabel, comment: newNodeComment });
+  nodes.add({ id: newNodeId, label: newNodeLabel, comment: newNodeComment, connections: [] });
   edges.add({ from: selectedNodeId, to: newNodeId });
+
+  // Update the connections for the parent node
+  const parentNode = nodes.get(selectedNodeId);
+  parentNode.connections.push(newNodeId);
+  nodes.update(parentNode);
 
   // Reset the input field and selected node
   document.getElementById("new-node-label").value = "";
@@ -165,6 +161,7 @@ function addNode() {
   // Save the graph to local storage after adding a node
   saveGraph();
 }
+
 
 function saveGraph() {
   const graphData = {
