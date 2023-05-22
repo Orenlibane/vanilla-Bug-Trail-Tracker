@@ -148,6 +148,9 @@ function addNode() {
 
   // Update the connections for the parent node
   const parentNode = nodes.get(selectedNodeId);
+  if (!parentNode.connections) {
+    parentNode.connections = [];
+  }
   parentNode.connections.push(newNodeId);
   nodes.update(parentNode);
 
@@ -180,8 +183,16 @@ function loadGraph() {
   }
 
   const graphData = JSON.parse(storedGraphData);
-  updateGraph(graphData);
+  nodes.clear();
+  edges.clear();
+  nodes.add(graphData.nodes);
+  edges.add(graphData.edges);
+
+  // Reset the selected node
+  selectedNodeId = null;
+  network.unselectAll();
 }
+
 
 function deleteNode() {
   if (selectedNodeId === null) {
@@ -321,19 +332,51 @@ function validateGraphData(graphData) {
 
 // Updates the graph with new data
 function updateGraph(graphData) {
+  // Clear existing nodes and edges
   nodes.clear();
   edges.clear();
-  nodes.add(graphData.nodes);
 
-  // Add edges based on the connections property in each node
+  // Create a map of node IDs to their corresponding data
+  const nodeMap = new Map();
   graphData.nodes.forEach((node) => {
-    if (node.connections) {
-      node.connections.forEach((connection) => {
-        edges.add({ from: node.id, to: connection });
+    nodeMap.set(node.id, node);
+  });
+
+  // Add nodes and edges
+  const updatedNodes = [];
+  const updatedEdges = [];
+
+  // Iterate over the graphData nodes
+  graphData.nodes.forEach((node) => {
+    const { id, label, comment, connections } = node;
+
+    // Create a copy of the node with an empty connections array
+    const updatedNode = { id, label, comment, connections: [] };
+
+    // Add the updated node to the updatedNodes array
+    updatedNodes.push(updatedNode);
+
+    // Create edges based on connections
+    if (connections) {
+      connections.forEach((connection) => {
+        if (nodeMap.has(connection)) {
+          updatedEdges.push({ from: id, to: connection });
+          updatedNode.connections.push(nodeMap.get(connection));
+        }
       });
     }
   });
+
+  // Update the dataset with the new nodes and edges
+  nodes.add(updatedNodes);
+  edges.add(updatedEdges);
+
+  // Set the selected node to null and unselect it in the network
+  selectedNodeId = null;
+  network.unselectAll();
 }
+
+
 
 function exportToPdf() {
   const container = document.getElementById("mynetwork");
