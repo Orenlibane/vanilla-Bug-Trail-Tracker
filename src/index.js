@@ -181,6 +181,7 @@ function loadGraph() {
     alert("No saved graph data found in local storage.");
     return;
   }
+  
 
   const graphData = JSON.parse(storedGraphData);
   nodes.clear();
